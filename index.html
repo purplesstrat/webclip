@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Apple WebClip Generator (Dark with Gradient BG)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    /* Dark theme styles */
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
+        Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+      max-width: 600px;
+      margin: 2rem auto;
+      background: #121212;
+      color: #e0e0e0;
+      padding: 1rem;
+    }
+    form {
+      background: #1e1e1e;
+      padding: 1.5rem;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.8);
+    }
+    label {
+      margin-top: 1rem;
+      display: block;
+      font-weight: 600;
+      color: #bbb;
+    }
+    input[type="text"],
+    input[type="url"],
+    input[type="color"],
+    select,
+    button {
+      width: 100%;
+      padding: 0.5rem;
+      margin-top: 0.25rem;
+      font-size: 1rem;
+      border-radius: 6px;
+      border: none;
+      background: #2c2c2c;
+      color: #eee;
+      box-sizing: border-box;
+    }
+    input[type="color"] {
+      padding: 0;
+      height: 40px;
+      cursor: pointer;
+    }
+    select {
+      cursor: pointer;
+    }
+    button {
+      background: #007aff;
+      color: white;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    button:hover {
+      background: #005ecb;
+    }
+    .icon-gallery {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 0.5rem;
+    }
+    .icon-thumb {
+      width: 60px;
+      height: 60px;
+      border: 2px solid #444;
+      border-radius: 12px;
+      cursor: pointer;
+      object-fit: cover;
+      transition: border-color 0.3s ease;
+    }
+    .icon-thumb.selected {
+      border-color: #007aff;
+    }
+    canvas {
+      display: block;
+      margin: 1rem auto;
+      background: transparent;
+      border-radius: 24px;
+      box-shadow: 0 0 12px rgba(0, 122, 255, 0.5);
+    }
+    #downloadLink {
+      display: none;
+      margin-top: 1rem;
+      text-align: center;
+      background: #007aff;
+      color: white;
+      padding: 0.75rem;
+      text-decoration: none;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <h2>Apple WebClip Generator</h2>
+  <form id="clipForm">
+    <label>Clip Name:
+      <input type="text" id="clipName" required autocomplete="off" />
+    </label>
+    <label>URL:
+      <input type="url" id="clipUrl" required autocomplete="off" />
+    </label>
+    <label>Upload PNG Icon:
+      <input type="file" id="uploadIcon" accept="image/png" />
+    </label>
+    <label>Or choose from GitHub-hosted icons:</label>
+    <div class="icon-gallery" id="iconGallery"></div>
+
+    <label>
+      Background Style:
+      <select id="bgStyle">
+        <option value="solid" selected>Solid Color</option>
+        <option value="gradient">Gradient</option>
+      </select>
+    </label>
+
+    <label id="solidColorLabel">Background Color:
+      <input type="color" id="bgColor" value="#007aff" />
+    </label>
+
+    <label id="gradientColors" style="display:none;">
+      Gradient Start:
+      <input type="color" id="bgGradientStart" value="#007aff" />
+    </label>
+
+    <label id="gradientColorsEnd" style="display:none;">
+      Gradient End:
+      <input type="color" id="bgGradientEnd" value="#00d4ff" />
+    </label>
+
+    <canvas id="iconCanvas" width="180" height="180"></canvas>
+
+    <button type="submit">Generate .mobileconfig</button>
+  </form>
+
+  <a id="downloadLink" download>Download Profile</a>
+
+  <script>
+    const presetIcons = {
+      appletvbox: "https://purplesstrat.github.io/icons/cbi--apple-tv-box.png",
+      appletv: "https://purplesstrat.github.io/icons/cbi--apple-tv.png",
+      applepay: "https://purplesstrat.github.io/icons/fa-brands--apple-pay.png",
+      airplane: "https://purplesstrat.github.io/icons/famicons--airplane.png",
+      androidround: "https://purplesstrat.github.io/icons/ic--round-android.png",
+      person: "https://purplesstrat.github.io/icons/ion--person.png",
+      refresh: "https://purplesstrat.github.io/icons/material-symbols--refresh-rounded.png",
+      iOS: "https://purplesstrat.github.io/icons/mdi--apple-ios.png",
+      command: "https://purplesstrat.github.io/icons/mdi--apple-keyboard-command.png",
+      apple: "https://purplesstrat.github.io/icons/mdi--apple.png",
+      androidbody: "https://purplesstrat.github.io/icons/prime--android.png",
+      applerainbowdarkicon: "https://purplesstrat.github.io/icons/skill-icons--apple-dark.png",
+      applerainbowlighticon: "https://purplesstrat.github.io/icons/skill-icons--apple-light.png"
+    };
+
+    let selectedIconUrl = null;
+    const gallery = document.getElementById('iconGallery');
+    const canvas = document.getElementById('iconCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Background style controls
+    const bgStyleSelect = document.getElementById('bgStyle');
+    const solidColorLabel = document.getElementById('solidColorLabel');
+    const gradientColors = document.getElementById('gradientColors');
+    const gradientColorsEnd = document.getElementById('gradientColorsEnd');
+
+    // Populate icon gallery
+    for (const [key, url] of Object.entries(presetIcons)) {
+      const img = document.createElement('img');
+      img.src = url;
+      img.className = "icon-thumb";
+      img.dataset.url = url;
+      img.alt = key + " icon";
+      img.onclick = () => {
+        selectedIconUrl = url;
+        document.querySelectorAll('.icon-thumb').forEach(i => i.classList.remove('selected'));
+        img.classList.add('selected');
+        redrawCanvas();
+      };
+      gallery.appendChild(img);
+    }
+
+    // Draw icon with chosen background
+    function drawIcon(srcUrl) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Background fill (solid or gradient)
+      if (bgStyleSelect.value === 'gradient') {
+        const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+        grad.addColorStop(0, document.getElementById('bgGradientStart').value);
+        grad.addColorStop(1, document.getElementById('bgGradientEnd').value);
+        ctx.fillStyle = grad;
+      } else {
+        ctx.fillStyle = document.getElementById('bgColor').value;
+      }
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Draw icon image
+      const img = new Image();
+      img.crossOrigin = "Anonymous";
+      img.onload = () => ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      img.src = srcUrl;
+    }
+
+    // Redraw canvas helper
+    function redrawCanvas() {
+      if (selectedIconUrl) {
+        drawIcon(selectedIconUrl);
+      } else {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+    }
+
+    // Update canvas on background style change
+    bgStyleSelect.addEventListener('change', () => {
+      if (bgStyleSelect.value === 'gradient') {
+        solidColorLabel.style.display = 'none';
+        gradientColors.style.display = 'block';
+        gradientColorsEnd.style.display = 'block';
+      } else {
+        solidColorLabel.style.display = 'block';
+        gradientColors.style.display = 'none';
+        gradientColorsEnd.style.display = 'none';
+      }
+      redrawCanvas();
+    });
+
+    // Update canvas on color inputs change
+    document.getElementById('bgColor').addEventListener('input', redrawCanvas);
+    document.getElementById('bgGradientStart').addEventListener('input', redrawCanvas);
+    document.getElementById('bgGradientEnd').addEventListener('input', redrawCanvas);
+
+    // Handle icon upload
+    document.getElementById('uploadIcon').addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      selectedIconUrl = null;
+      document.querySelectorAll('.icon-thumb').forEach(i => i.classList.remove('selected'));
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        const img = new Image();
+        img.onload = () => {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+          // Draw background first (handle gradient or solid)
+          if (bgStyleSelect.value === 'gradient') {
+            const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+            grad.addColorStop(0, document.getElementById('bgGradientStart').value);
+            grad.addColorStop(1, document.getElementById('bgGradientEnd').value);
+            ctx.fillStyle = grad;
+          } else {
+            ctx.fillStyle = document.getElementById('bgColor').value;
+          }
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+          // Then draw uploaded image on top, scaled to canvas size
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // Handle form submission and generate .mobileconfig
+    document.getElementById('clipForm').addEventListener('submit', e => {
+      e.preventDefault();
+
+      const name = document.getElementById('clipName').value.trim();
+      const url = document.getElementById('clipUrl').value.trim();
+      if (!name || !url) {
+        alert("Please fill in both Clip Name and URL.");
+        return;
+      }
+
+      // Get PNG data from canvas (without prefix)
+      const pngData = canvas.toDataURL("image/png").replace(/^data:image\/png;base64,/, "");
+
+      // Generate UUIDs
+      const uuid1 = crypto.randomUUID();
+      const uuid2 = crypto.randomUUID();
+
+      // Build .mobileconfig XML string
+      const mobileconfig = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+ "http://purplesstrat.github.io/webclip/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+ <key>PayloadContent</key>
+ <array>
+   <dict>
+     <key>FullScreen</key><true/>
+     <key>Icon</key><data>${pngData}</data>
+     <key>IsRemovable</key><true/>
+     <key>Label</key><string>${name}</string>
+     <key>PayloadDescription</key><string>WebClip</string>
+     <key>PayloadDisplayName</key><string>${name}</string>
+     <key>PayloadIdentifier</key><string>com.webclip.${name}</string>
+     <key>PayloadType</key><string>com.apple.webClip.managed</string>
+     <key>PayloadUUID</key><string>${uuid1}</string>
+     <key>PayloadVersion</key><integer>1</integer>
+     <key>Precomposed</key><false/>
+     <key>URL</key><string>${url}</string>
+   </dict>
+ </array>
+ <key>PayloadDisplayName</key><string>${name}</string>
+ <key>PayloadIdentifier</key><string>com.webclip.profile.${name}</string>
+ <key>PayloadOrganization</key><string>WebClip Generator</key>
+ <key>PayloadRemovalDisallowed</key><false/>
+ <key>PayloadType</key><string>Configuration</string>
+ <key>PayloadUUID</key><string>${uuid2}</string>
+ <key>PayloadVersion</key><integer>1</integer>
+</dict>
+</plist>`;
+
+      const blob = new Blob([mobileconfig], { type: 'application/x-apple-aspen-config' });
+      const link = document.getElementById('downloadLink');
+
+      // Randomize filename like xxxx-xxxx-xxxx-xxxx.mobileconfig
+      const randomName = `${crypto.randomUUID().split('-').slice(0, 4).join('-')}.mobileconfig`;
+
+      link.href = URL.createObjectURL(blob);
+      link.download = randomName;
+      link.style.display = 'block';
+      link.textContent = `Download Profile (${randomName})`;
+      link.focus();
+    });
+  </script>
+</body>
+</html>
