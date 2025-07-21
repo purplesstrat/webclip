@@ -296,9 +296,9 @@
       const uuid2 = crypto.randomUUID();
 
       // Build .mobileconfig XML string
-      const mobileconfig = `<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
- "http://purplesstrat.github.io/webclip/PropertyList-1.0.dtd">
+const mobileconfig = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" 
+ "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
  <key>PayloadContent</key>
@@ -320,13 +320,14 @@
  </array>
  <key>PayloadDisplayName</key><string>${name}</string>
  <key>PayloadIdentifier</key><string>com.webclip.profile.${name}</string>
- <key>PayloadOrganization</key><string>WebClip Generator</key>
+ <key>PayloadOrganization</key><string>WebClip Generator</string>
  <key>PayloadRemovalDisallowed</key><false/>
  <key>PayloadType</key><string>Configuration</string>
  <key>PayloadUUID</key><string>${uuid2}</string>
  <key>PayloadVersion</key><integer>1</integer>
 </dict>
 </plist>`;
+
 
       const blob = new Blob([mobileconfig], { type: 'application/x-apple-aspen-config' });
       const link = document.getElementById('downloadLink');
