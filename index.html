@@ -257,6 +257,7 @@
       const pngData = canvas.toDataURL("image/png").replace(/^data:image\/png;base64,/, "");
       const uuid1 = crypto.randomUUID();
       const uuid2 = crypto.randomUUID();
+      const uuid3 = crypto.randomUUID();
 
       const mobileconfig = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" 
@@ -282,10 +283,10 @@
  </array>
  <key>PayloadDisplayName</key><string>${name}</string>
  <key>PayloadIdentifier</key><string>com.webclip.profile.${name}</string>
- <key>PayloadOrganization</key><string>WebClip Generator</string>
+ <key>PayloadOrganization</key><string>${uuid2}</string>
  <key>PayloadRemovalDisallowed</key><false/>
  <key>PayloadType</key><string>Configuration</string>
- <key>PayloadUUID</key><string>${uuid2}</string>
+ <key>PayloadUUID</key><string>${uuid3}</string>
  <key>PayloadVersion</key><integer>1</integer>
 </dict>
 </plist>`;
