@@ -5,7 +5,6 @@
   <title>Apple WebClip Generator (Dark with Gradient BG)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    /* Dark theme styles */
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
         Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
@@ -136,7 +135,7 @@
     </label>
 
     <canvas id="iconCanvas" width="180" height="180"></canvas>
-
+    <button id="downloadImageButton" type="button">Download Icon Image (PNG)</button>
     <button type="submit">Generate .mobileconfig</button>
   </form>
 
@@ -157,28 +156,27 @@
       k: "https://purplesstrat.github.io/icons/prime--android.png",
       l: "https://purplesstrat.github.io/icons/skill-icons--apple-dark.png",
       m: "https://purplesstrat.github.io/icons/skill-icons--apple-light.png",
-       n: "https://purplesstrat.github.io/icons/arcticons--amazon-photos.png",
-       o: "https://purplesstrat.github.io/icons/arcticons--apple-photos.png",
-       p: "https://purplesstrat.github.io/icons/ion--logo-apple-ar.png",
-       q: "https://purplesstrat.github.io/icons/lineicons--apple-music-alt.png",
-       r: "https://purplesstrat.github.io/icons/logos--apple-app-store.png",
-       s: "https://purplesstrat.github.io/icons/logos--google-photos.png",
-       t: "https://purplesstrat.github.io/icons/TrollStore-Logo.png",
-       u: "https://raw.githubusercontent.com/alfiecg24/TrollInstallerX/refs/heads/main/Resources/Icon.png"
+      n: "https://purplesstrat.github.io/icons/arcticons--amazon-photos.png",
+      o: "https://purplesstrat.github.io/icons/arcticons--apple-photos.png",
+      p: "https://purplesstrat.github.io/icons/ion--logo-apple-ar.png",
+      q: "https://purplesstrat.github.io/icons/lineicons--apple-music-alt.png",
+      r: "https://purplesstrat.github.io/icons/logos--apple-app-store.png",
+      s: "https://purplesstrat.github.io/icons/logos--google-photos.png",
+      t: "https://purplesstrat.github.io/icons/TrollStore-Logo.png",
+      u: "https://raw.githubusercontent.com/alfiecg24/TrollInstallerX/refs/heads/main/Resources/Icon.png"
     };
 
     let selectedIconUrl = null;
+    let uploadedImage = null;
     const gallery = document.getElementById('iconGallery');
     const canvas = document.getElementById('iconCanvas');
     const ctx = canvas.getContext('2d');
 
-    // Background style controls
     const bgStyleSelect = document.getElementById('bgStyle');
     const solidColorLabel = document.getElementById('solidColorLabel');
     const gradientColors = document.getElementById('gradientColors');
     const gradientColorsEnd = document.getElementById('gradientColorsEnd');
 
-    // Populate icon gallery
     for (const [key, url] of Object.entries(presetIcons)) {
       const img = document.createElement('img');
       img.src = url;
@@ -187,6 +185,7 @@
       img.alt = key + " icon";
       img.onclick = () => {
         selectedIconUrl = url;
+        uploadedImage = null;
         document.querySelectorAll('.icon-thumb').forEach(i => i.classList.remove('selected'));
         img.classList.add('selected');
         redrawCanvas();
@@ -194,11 +193,9 @@
       gallery.appendChild(img);
     }
 
-    // Draw icon with chosen background
-    function drawIcon(srcUrl) {
+    function redrawCanvas() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Background fill (solid or gradient)
       if (bgStyleSelect.value === 'gradient') {
         const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
         grad.addColorStop(0, document.getElementById('bgGradientStart').value);
@@ -209,42 +206,27 @@
       }
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Draw icon image
-      const img = new Image();
-      img.crossOrigin = "Anonymous";
-      img.onload = () => ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      img.src = srcUrl;
-    }
-
-    // Redraw canvas helper
-    function redrawCanvas() {
-      if (selectedIconUrl) {
-        drawIcon(selectedIconUrl);
-      } else {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      if (uploadedImage) {
+        ctx.drawImage(uploadedImage, 0, 0, canvas.width, canvas.height);
+      } else if (selectedIconUrl) {
+        const img = new Image();
+        img.crossOrigin = "Anonymous";
+        img.onload = () => ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        img.src = selectedIconUrl;
       }
     }
 
-    // Update canvas on background style change
     bgStyleSelect.addEventListener('change', () => {
-      if (bgStyleSelect.value === 'gradient') {
-        solidColorLabel.style.display = 'none';
-        gradientColors.style.display = 'block';
-        gradientColorsEnd.style.display = 'block';
-      } else {
-        solidColorLabel.style.display = 'block';
-        gradientColors.style.display = 'none';
-        gradientColorsEnd.style.display = 'none';
-      }
+      solidColorLabel.style.display = bgStyleSelect.value === 'solid' ? 'block' : 'none';
+      gradientColors.style.display = bgStyleSelect.value === 'gradient' ? 'block' : 'none';
+      gradientColorsEnd.style.display = bgStyleSelect.value === 'gradient' ? 'block' : 'none';
       redrawCanvas();
     });
 
-    // Update canvas on color inputs change
     document.getElementById('bgColor').addEventListener('input', redrawCanvas);
     document.getElementById('bgGradientStart').addEventListener('input', redrawCanvas);
     document.getElementById('bgGradientEnd').addEventListener('input', redrawCanvas);
 
-    // Handle icon upload
     document.getElementById('uploadIcon').addEventListener('change', e => {
       const file = e.target.files[0];
       if (!file) return;
@@ -254,33 +236,17 @@
 
       const reader = new FileReader();
       reader.onload = () => {
-        const img = new Image();
-        img.onload = () => {
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-          // Draw background first (handle gradient or solid)
-          if (bgStyleSelect.value === 'gradient') {
-            const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-            grad.addColorStop(0, document.getElementById('bgGradientStart').value);
-            grad.addColorStop(1, document.getElementById('bgGradientEnd').value);
-            ctx.fillStyle = grad;
-          } else {
-            ctx.fillStyle = document.getElementById('bgColor').value;
-          }
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-          // Then draw uploaded image on top, scaled to canvas size
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        uploadedImage = new Image();
+        uploadedImage.onload = () => {
+          redrawCanvas();
         };
-        img.src = reader.result;
+        uploadedImage.src = reader.result;
       };
       reader.readAsDataURL(file);
     });
 
-    // Handle form submission and generate .mobileconfig
     document.getElementById('clipForm').addEventListener('submit', e => {
       e.preventDefault();
-
       const name = document.getElementById('clipName').value.trim();
       const url = document.getElementById('clipUrl').value.trim();
       if (!name || !url) {
@@ -288,15 +254,11 @@
         return;
       }
 
-      // Get PNG data from canvas (without prefix)
       const pngData = canvas.toDataURL("image/png").replace(/^data:image\/png;base64,/, "");
-
-      // Generate UUIDs
       const uuid1 = crypto.randomUUID();
       const uuid2 = crypto.randomUUID();
 
-      // Build .mobileconfig XML string
-const mobileconfig = `<?xml version="1.0" encoding="UTF-8"?>
+      const mobileconfig = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" 
  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -328,11 +290,8 @@ const mobileconfig = `<?xml version="1.0" encoding="UTF-8"?>
 </dict>
 </plist>`;
 
-
       const blob = new Blob([mobileconfig], { type: 'application/x-apple-aspen-config' });
       const link = document.getElementById('downloadLink');
-
-      // Randomize filename like xxxx-xxxx-xxxx-xxxx.mobileconfig
       const randomName = `${crypto.randomUUID().split('-').slice(0, 4).join('-')}.mobileconfig`;
 
       link.href = URL.createObjectURL(blob);
@@ -340,6 +299,16 @@ const mobileconfig = `<?xml version="1.0" encoding="UTF-8"?>
       link.style.display = 'block';
       link.textContent = `Download Profile (${randomName})`;
       link.focus();
+    });
+
+    document.getElementById('downloadImageButton').addEventListener('click', () => {
+      const imageData = canvas.toDataURL("image/png");
+      const link = document.createElement('a');
+      link.href = imageData;
+      link.download = `webclip-icon-${crypto.randomUUID().split('-')[0]}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     });
   </script>
 </body>
